@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/Karthikeyareddy81/elearn_website.git'
+                git branch: 'main', url: 'https://github.com/Karthikeyareddy81/elearn_website.git'
             }
         }
 
@@ -30,6 +30,7 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
+                sh 'kubectl config use-context minikube'
                 sh 'kubectl apply -f deployment.yaml'
             }
         }
@@ -37,10 +38,10 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment successful!'
+            echo '✅ Deployment successful!'
         }
         failure {
-            echo 'Deployment failed!'
+            echo '❌ Deployment failed!'
         }
     }
 }
