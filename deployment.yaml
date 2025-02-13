@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: static-site
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: static-site
+  template:
+    metadata:
+      labels:
+        app: static-site
+    spec:
+      containers:
+        - name: static-site
+          image: karthikeyareddy716/my-static-site:latest
+          ports:
+            - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: static-site-service
+spec:
+  selector:
+    app: static-site
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer
