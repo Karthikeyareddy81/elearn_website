@@ -28,12 +28,34 @@ pipeline {
             }
         }
 
+        // stage('Deploy to Kubernetes') {
+        //     steps {
+        //         sh 'kubectl config use-context minikube'
+        //         sh 'kubectl apply -f deployment.yaml'
+        //     }
+        // }
+
         stage('Deploy to Kubernetes') {
             steps {
-                sh 'kubectl config use-context minikube'
-                sh 'kubectl apply -f deployment.yaml'
+                script {
+                    // Check if Minikube is running
+                    def minikubeStatus = sh(script: 'minikube status | grep -i running || echo "not running"', returnStdout: true).trim()
+                    if (minikubeStatus.contains("not running")) {
+                        error "Minikube is not running. Start Minikube before deploying."
+                    }
+        
+                    // Ensure Minikube context is set
+                    def currentContext = sh(script: 'kubectl config current-context || echo "no-context"', returnStdout: true).trim()
+                    if (currentContext != "minikube") {
+                        sh 'kubectl config use-context minikube'
+                    }
+        
+                    // Apply Kubernetes manifests
+                    sh 'kubectl apply -f deployment.yaml'
+                }
             }
-        }
+      }
+
     }
 
     post {
