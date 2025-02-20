@@ -28,12 +28,26 @@ pipeline {
             }
         }
 
+        // stage('Deploy to Kubernetes') {
+        //     steps {
+        //         sh 'kubectl config use-context minikube'
+        //         sh 'kubectl apply -f deployment.yaml'
+        //     }
+        // }
+
         stage('Deploy to Kubernetes') {
             steps {
-                sh 'kubectl config use-context minikube'
+                // Set Kubernetes config to use your master node's kubeconfig
+                sh 'export KUBECONFIG=/etc/kubernetes/admin.conf'
+        
+                // Apply the deployment file to your cluster
                 sh 'kubectl apply -f deployment.yaml'
+        
+                // Optional: Verify deployment status
+                sh 'kubectl rollout status deployment/my-static-site'
             }
         }
+
     }
 
     post {
