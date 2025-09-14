@@ -1,61 +1,58 @@
 pipeline {
-    agent any  // Runs on any available Jenkins agent
+    agent any
 
     environment {
-        IMAGE_NAME = "my-static-site"
-        DOCKER_REGISTRY = "karthikeyareddy716/my-static-site"
+        TAR_NAME = 'elearn-website.tar.gz'
+        ARTIFACT_DIR = 'elearn-website'
+        NEXUS_URL = 'http://192.168.56.102:8081'
+        NEXUS_REPO = 'webapp-releases'
+        NEXUS_CREDS = credentials('nexus-creds')
+        TOMCAT_SSH = 'tomcat-ssh'
+        TOMCAT_IP = '192.168.56.102'
+        TOMCAT_WEBAPPS = '/opt/tomcat/webapps'
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Clone Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/Karthikeyareddy81/elearn_website.git'
+                git branch: 'dev1', url: 'https://github.com/Karthikeyareddy81/elearn_website.git'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Artifact') {
             steps {
-                sh 'docker build -t $IMAGE_NAME .'
+                sh '''
+                # Create tar.gz directly in workspace
+                tar -czf ${TAR_NAME} -C ${ARTIFACT_DIR} .
+                '''
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Upload to Nexus') {
             steps {
-                withDockerRegistry([credentialsId: 'docker-hub-cred', url: '']) {
-                    sh 'docker tag $IMAGE_NAME $DOCKER_REGISTRY:latest'
-                    sh 'docker push $DOCKER_REGISTRY:latest'
+                sh '''
+                echo "Uploading: ${TAR_NAME} to Nexus..."
+                ls -lh ${TAR_NAME}
+                curl -v -u ${NEXUS_CREDS_USR}:${NEXUS_CREDS_PSW} \
+                --upload-file ${TAR_NAME} \
+                ${NEXUS_URL}/repository/${NEXUS_REPO}/${TAR_NAME}
+                '''
+            }
+        }
+
+        stage('Deploy to Tomcat') {
+            steps {
+                sshagent (credentials: [TOMCAT_SSH]) {
+                    sh '''
+                    scp ${TAR_NAME} root@${TOMCAT_IP}:/tmp/
+                    ssh root@${TOMCAT_IP} <<EOF
+                        mkdir -p ${TOMCAT_WEBAPPS}/elearn
+                        tar -xzf /tmp/${TAR_NAME} -C ${TOMCAT_WEBAPPS}/elearn
+                        rm -f /tmp/${TAR_NAME}
+                    EOF
+                    '''
                 }
             }
-        }
-
-        // stage('Deploy to Kubernetes') {
-        //     steps {
-        //         sh 'kubectl config use-context minikube'
-        //         sh 'kubectl apply -f deployment.yaml'
-        //     }
-        // }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                // Set Kubernetes config to use your master node's kubeconfig
-                sh 'export KUBECONFIG=/etc/kubernetes/admin.conf'
-        
-                // Apply the deployment file to your cluster
-                sh 'kubectl apply -f deployment.yaml'
-        
-                // Optional: Verify deployment status
-                sh 'kubectl rollout status deployment/my-static-site'
-            }
-        }
-
-    }
-
-    post {
-        success {
-            echo '✅ Deployment successful!'
-        }
-        failure {
-            echo '❌ Deployment failed!'
         }
     }
 }

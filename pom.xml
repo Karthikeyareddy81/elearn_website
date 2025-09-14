@@ -3,10 +3,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.example</groupId>
-    <artifactId>static-site</artifactId>
+    <groupId>in.karthik</groupId>
+    <artifactId>elearn-web</artifactId>
+    <packaging>war</packaging>
     <version>1.0.0</version>
-    <packaging>pom</packaging>
-    
-    <name>Static HTML Site</name>
+
+    <build>
+        <finalName>elearn-web</finalName>
+    </build>
 </project>
